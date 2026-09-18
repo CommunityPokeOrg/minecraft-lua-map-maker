@@ -92,6 +92,28 @@ class ArchivesTest {
         assertThrows(IOException.class, () -> Archives.extract(junk, tmp.resolve("jz")));
     }
 
+    @Test
+    void tarFileEntryReplacesExistingDirectory() throws IOException {
+        // GNU tar semantics: a later non-dir entry overwrites a dir created by
+        // an earlier entry — real archives (IntelliJ's tarball) contain this.
+        Path tgz = tmp.resolve("conflict.tar.gz");
+        try (OutputStream fos = Files.newOutputStream(tgz);
+             GZIPOutputStream gz = new GZIPOutputStream(fos)) {
+            gz.write(tarHeader("conflict/", '5', 0755, 0));
+            gz.write(tarHeader("conflict/inner.txt", '0', 0644, 6));
+            gz.write("inside".getBytes(StandardCharsets.UTF_8));
+            gz.write(new byte[512 - 6]);
+            gz.write(tarHeader("conflict", '0', 0644, 9));
+            gz.write("file-wins".getBytes(StandardCharsets.UTF_8));
+            gz.write(new byte[512 - 9]);
+            gz.write(new byte[1024]);
+        }
+        Path dest = tmp.resolve("cout");
+        Archives.extract(tgz, dest);
+        assertTrue(Files.isRegularFile(dest.resolve("conflict")));
+        assertEquals("file-wins", Files.readString(dest.resolve("conflict")));
+    }
+
     // --- minimal ustar header writer for fixtures ------------------------------------
 
     private static byte[] tarHeader(String name, char type, int mode, long size) {

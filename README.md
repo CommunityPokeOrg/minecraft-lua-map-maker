@@ -96,7 +96,22 @@ java -jar luamap-launcher.jar [options]
   --bridgePort N    enable LuaBridge on 127.0.0.1:N for IDE live-eval/debug
                     (see docs/luabridge.md; the LuaMap IntelliJ plugin
                     connects here)
+  --setup-ide       provision IntelliJ IDEA CE + LuaMap plugin under
+                    .luamap/ide/, print the path, exit (no game launch)
+  --ide             same, then launch the IDE
+  --idePath DIR     use an existing IntelliJ install instead of the managed
+                    one (plugin still installed)
 ```
+
+`--setup-ide`/`--ide` never start the game — run the launcher again normally
+for that. The managed IDE comes from the JetBrains releases API
+(`data.services.jetbrains.com`, Community Edition `IIC`), is verified against
+the published `.sha256`, extracted into `.luamap/ide/ideaIC-<version>/` with a
+`.done` completion marker, and gets the LuaMap plugin (bundled inside the
+launcher jar; falls back to the matching GitHub release asset) installed into
+its `plugins/` directory. Start the game with `--bridgePort 25575`, open a
+`.lua` script in the IDE, and use a "LuaMap Script" run configuration to
+live-run it against the world.
 
 ## IDE integration (LuaBridge + IntelliJ plugin)
 

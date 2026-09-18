@@ -17,6 +17,12 @@ import java.util.Properties;
  *   --mc VERSION      override Minecraft version
  *   --bridgePort N    enable LuaBridge on 127.0.0.1:N (IDE live-eval/debug;
  *                     the LuaMap IntelliJ plugin connects here)
+ *   --setup-ide       provision a managed IntelliJ IDEA CE under
+ *                     .luamap/ide/ with the LuaMap plugin installed, print the
+ *                     path, and exit (no game launch)
+ *   --ide             same provisioning, then launch the IDE and exit
+ *   --idePath DIR     use an existing IntelliJ install instead of the managed
+ *                     one (the plugin is still installed into it)
  * </pre>
  *
  * The launcher is anchored to the directory containing its own jar — the
@@ -38,6 +44,7 @@ public final class Main {
         String xmx = "2G";
         String mcOverride = null;
         int bridgePort = 0;
+        IdeFlags.Result ide = null;
 
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
@@ -47,6 +54,14 @@ public final class Main {
                 case "--xmx" -> xmx = args[++i];
                 case "--mc" -> mcOverride = args[++i];
                 case "--bridgePort" -> bridgePort = Integer.parseInt(args[++i]);
+                case "--setup-ide", "--ide", "--idePath" -> {
+                    if (ide == null) {
+                        ide = IdeFlags.parse(args);
+                    }
+                    if (args[i].equals("--idePath")) {
+                        i++; // consume the value
+                    }
+                }
                 case "--help", "-h" -> {
                     System.out.println(usage());
                     return;
@@ -85,6 +100,15 @@ public final class Main {
         System.out.println("Launcher dir: " + launcherDir);
         System.out.println("Game dir: " + gameDir.toAbsolutePath());
 
+        if (ide != null && ide.mode() != IdeFlags.Mode.NONE) {
+            Path ideDir = IdeProvisioner.ensureIde(launcherDir, ide.idePath());
+            System.out.println("IDE ready at: " + ideDir);
+            if (ide.mode() == IdeFlags.Mode.LAUNCH) {
+                IdeProvisioner.launch(ideDir);
+            }
+            return; // IDE modes never start the game
+        }
+
         // Managed Java 17 — downloaded into javahome/ on first run.
         Path java = JavaProvisioner.ensureJava17(launcherDir);
 
@@ -100,7 +124,7 @@ public final class Main {
     }
 
     private static String usage() {
-        return "java -jar luamap-launcher.jar [--server] [--gameDir DIR] [--username NAME] [--xmx SIZE] [--mc VERSION] [--bridgePort N]";
+        return "java -jar luamap-launcher.jar [--server] [--gameDir DIR] [--username NAME] [--xmx SIZE] [--mc VERSION] [--bridgePort N] [--setup-ide|--ide [--idePath DIR]]";
     }
 
     record Versions(String mc, String loader, String fabricApi, String installer, String mod) {

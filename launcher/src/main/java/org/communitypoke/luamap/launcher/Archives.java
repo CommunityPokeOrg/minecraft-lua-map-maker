@@ -86,22 +86,27 @@ final class Archives {
                     case 'L' -> longName = readString(in, size);
                     case 'K' -> longLink = readString(in, size);
                     case 'x', 'g' -> skipBody(in, size); // pax extended headers
-                    case '5' -> Files.createDirectories(safeResolve(dest, name));
+                    case '5' -> {
+                        Path out = safeResolve(dest, name);
+                        removeAny(out); // a dir entry may replace a file/symlink
+                        Files.createDirectories(out);
+                    }
                     case '2' -> {
                         Path out = safeResolve(dest, name);
                         Files.createDirectories(out.getParent());
-                        Files.deleteIfExists(out);
+                        removeAny(out);
                         Files.createSymbolicLink(out, Path.of(linkName));
                     }
                     case '1' -> {
                         Path out = safeResolve(dest, name);
                         Files.createDirectories(out.getParent());
-                        Files.deleteIfExists(out);
+                        removeAny(out);
                         Files.createLink(out, safeResolve(dest, linkName));
                     }
                     case '0', '\0', '7' -> {
                         Path out = safeResolve(dest, name);
                         Files.createDirectories(out.getParent());
+                        removeAny(out); // a file entry may replace an existing dir
                         copyBody(in, out, size);
                         applyMode(out, mode);
                     }
@@ -230,6 +235,19 @@ final class Archives {
             Files.setPosixFilePermissions(file, PosixFilePermissions.fromString(perms.toString()));
         } catch (UnsupportedOperationException | SecurityException | IOException ignored) {
             // non-POSIX filesystem — modes don't apply
+        }
+    }
+
+    /**
+     * Tar semantics: a later entry replaces whatever sits at its path, so an
+     * existing dir (possibly non-empty) must come out before a file/link can
+     * be written there.
+     */
+    private static void removeAny(Path p) throws IOException {
+        if (Files.isDirectory(p, java.nio.file.LinkOption.NOFOLLOW_LINKS)) {
+            JavaProvisioner.deleteTree(p);
+        } else {
+            Files.deleteIfExists(p); // also deletes symlinks without following them
         }
     }
 
