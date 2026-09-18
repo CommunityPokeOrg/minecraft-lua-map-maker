@@ -9,4 +9,10 @@ pluginManagement {
     }
 }
 
+plugins {
+    // Auto-provisions the JDK 21 toolchain needed to compile against
+    // IntelliJ 2025.3 (Java 21) when the build host only has JDK 17.
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+}
+
 rootProject.name = 'luamap-idea-plugin'

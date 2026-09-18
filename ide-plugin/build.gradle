@@ -6,11 +6,17 @@ plugins {
 version = pluginVersion
 group = 'org.communitypoke'
 
-// Compiles fine on JDK 17 (class file v61 runs on JBR 21); bump to VERSION_21
-// when building on a JDK 21+ host to silence the platform warning.
+// JDK 21 toolchain is required to read IntelliJ 2025.3 (v65) class files;
+// foojay-resolver auto-provisions it on JDK-17 hosts. release=17 keeps
+// bytecode runnable on every supported IDE (2024.1+ ships JBR 17 or 21).
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
 }
 
 repositories {
@@ -23,10 +29,61 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        intellijIdeaCommunity(platformVersion.toString())
+        intellijIdeaUltimate(platformVersion.toString())
         instrumentationTools()
         pluginVerifier()
     }
+}
+
+// Boots the IDE headless to index settings UI — the plugin has no settings
+// page and this crashes on the JBR's coroutines agent, so skip it.
+tasks.named('buildSearchableOptions') { enabled = false }
+
+// Guard the compatibility range that actually ships: since=241 must be
+// present and until-build must stay absent (unbounded) in the packaged
+// plugin.xml — otherwise new IDE builds refuse to load the plugin.
+tasks.register('verifyPluginXml') {
+    description = 'Verifies packaged plugin.xml compatibility range'
+    dependsOn tasks.named('buildPlugin')
+    doLast {
+        def zip = layout.buildDirectory.dir('distributions').get().asFile
+            .listFiles().find { it.name == "luamap-idea-plugin-${pluginVersion}.zip" }
+        assert zip != null : "plugin zip not found"
+        def readEntry = { java.util.zip.ZipInputStream s ->
+            def out = new java.io.ByteArrayOutputStream()
+            s.transferTo(out)
+            return out.toByteArray()
+        }
+        byte[] inner = null
+        new java.util.zip.ZipInputStream(zip.newInputStream()).withCloseable { s ->
+            def e; while ((e = s.nextEntry) != null) {
+                if (e.name ==~ /luamap-idea-plugin\/lib\/luamap-idea-plugin-[^-]*\.jar/) {
+                    inner = readEntry(s)
+                    break
+                }
+            }
+        }
+        assert inner != null : "plugin jar not found inside zip"
+        String xml = null
+        new java.util.zip.ZipInputStream(
+                new java.io.ByteArrayInputStream(inner)).withCloseable { s ->
+            def e; while ((e = s.nextEntry) != null) {
+                if (e.name == 'META-INF/plugin.xml') {
+                    xml = new String(readEntry(s), 'UTF-8')
+                    break
+                }
+            }
+        }
+        assert xml != null : "META-INF/plugin.xml missing"
+        assert xml.contains("since-build=\"${pluginSinceBuild}\"") :
+            "unexpected since-build in plugin.xml"
+        assert !xml.contains('until-build') :
+            "until-build must be absent (unbounded) in plugin.xml"
+    }
+}
+
+check {
+    dependsOn tasks.named('verifyPluginXml')
 }
 
 intellijPlatform {
@@ -36,6 +93,9 @@ intellijPlatform {
         version = pluginVersion.toString()
         ideaVersion {
             sinceBuild = pluginSinceBuild.toString()
+            // Unset until-build: absent property → no until-build
+            // attribute → plugin accepts all future IDE builds.
+            untilBuild = provider { null }
         }
     }
 }

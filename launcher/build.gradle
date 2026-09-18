@@ -33,6 +33,11 @@ test {
 
 def modJarProvider = rootProject.layout.buildDirectory.dir('libs')
 
+// Version of the ide-plugin composite build, for pinning the bundled zip.
+def ideProps = new Properties()
+file("${rootDir}/ide-plugin/gradle.properties").withInputStream { ideProps.load(it) }
+def idePluginVersion = ideProps.pluginVersion.toString()
+
 // Embed the built mod jar inside the launcher jar so Wolfy only ever needs
 // one file: luamap-launcher.jar. It is extracted into <gameDir>/mods at run time.
 processResources {
@@ -67,11 +72,51 @@ tasks.register('fatJar', Jar) {
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
+    // Pin the exact plugin zip — stale dists can linger in build/distributions.
     from("${rootDir}/ide-plugin/build/distributions") {
-        include 'luamap-idea-plugin-*.zip'
-        rename 'luamap-idea-plugin-.*\\.zip', 'luamap-idea-plugin.zip'
+        include "luamap-idea-plugin-${idePluginVersion}.zip"
+        rename '.*', 'luamap-idea-plugin.zip'
         into 'bundled-plugins'
     }
+}
+
+// Deterministic packaging check: open the fat jar and verify the entries the
+// runtime relies on are actually present (bundled mod + bundled IDE plugin).
+tasks.register('verifyLauncherJar') {
+    description = 'Verifies luamap-launcher.jar embeds the mod and plugin zips'
+    dependsOn tasks.named('fatJar')
+    doLast {
+        def jar = tasks.named('fatJar').get().archiveFile.get().asFile
+        def innerNames = [] as Set
+        def names
+        new java.util.zip.ZipFile(jar).withCloseable { zf ->
+            names = zf.entries()*.name
+            assert names.contains('bundled-plugins/luamap-idea-plugin.zip') :
+                "fat jar is missing bundled-plugins/luamap-idea-plugin.zip"
+            assert names.any { it ==~ /bundled-mods\/luamap-.*\.jar/ } :
+                "fat jar is missing bundled-mods/luamap-*.jar"
+            // Nested check: the bundled zip is a real zip with a plugin jar.
+            zf.getInputStream(zf.getEntry('bundled-plugins/luamap-idea-plugin.zip'))
+                .withCloseable { s ->
+                    def out = new java.io.ByteArrayOutputStream()
+                    s.transferTo(out)
+                    def inner = new java.util.zip.ZipInputStream(
+                        new java.io.ByteArrayInputStream(out.toByteArray()))
+                    def e; while ((e = inner.nextEntry) != null) {
+                        innerNames.add(e.name)
+                    }
+                }
+        }
+        assert innerNames.any {
+            it ==~ /luamap-idea-plugin\/lib\/luamap-idea-plugin-.*\.jar/
+        } : "bundled plugin zip has no plugin jar"
+    }
+}
+
+check {
+    dependsOn tasks.named('verifyLauncherJar')
+    // Also verify the plugin zip's packaged compatibility range.
+    dependsOn gradle.includedBuild('ide-plugin').task(':verifyPluginXml')
 }
 
 build {
