@@ -1,0 +1,123 @@
+{
+  "name": "luamap-vscode",
+  "displayName": "LuaMap Tools",
+  "description": "Live LuaBridge connection for Lua Map Maker: NPC inspector, block queries, script runner, and eval console over the loopback bridge protocol.",
+  "version": "0.4.0",
+  "publisher": "communitypoke",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": ["Other", "Programming Languages", "Debuggers"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "luamap",
+          "title": "LuaMap",
+          "icon": "media/luamap.svg"
+        }
+      ]
+    },
+    "views": {
+      "luamap": [
+        {
+          "id": "luamap.session",
+          "name": "Session"
+        },
+        {
+          "id": "luamap.npcs",
+          "name": "NPCs"
+        },
+        {
+          "id": "luamap.scripts",
+          "name": "Scripts"
+        }
+      ]
+    },
+    "viewsWelcome": {
+      "view": "luamap.session",
+      "contents": "Not connected to a LuaBridge endpoint.\n[Connect](command:luamap.connect)\nStart the game with --bridgePort 25575 (see the LuaMap README)."
+    },
+    "commands": [
+      {
+        "command": "luamap.connect",
+        "title": "LuaMap: Connect",
+        "category": "LuaMap"
+      },
+      {
+        "command": "luamap.disconnect",
+        "title": "LuaMap: Disconnect",
+        "category": "LuaMap"
+      },
+      {
+        "command": "luamap.reconnect",
+        "title": "LuaMap: Reconnect",
+        "category": "LuaMap"
+      },
+      {
+        "command": "luamap.runScript",
+        "title": "LuaMap: Run Script",
+        "category": "LuaMap"
+      },
+      {
+        "command": "luamap.evaluate",
+        "title": "LuaMap: Evaluate Lua",
+        "category": "LuaMap"
+      },
+      {
+        "command": "luamap.queryBlock",
+        "title": "LuaMap: Query Block",
+        "category": "LuaMap"
+      },
+      {
+        "command": "luamap.refreshNpcs",
+        "title": "LuaMap: Refresh NPCs",
+        "category": "LuaMap"
+      }
+    ],
+    "configuration": {
+      "title": "LuaMap",
+      "properties": {
+        "luamap.bridge.host": {
+          "type": "string",
+          "default": "127.0.0.1",
+          "description": "LuaBridge host (loopback only by design)."
+        },
+        "luamap.bridge.port": {
+          "type": "number",
+          "default": 25575,
+          "description": "LuaBridge port — must match the game's --bridgePort / -Dluamap.bridge.port."
+        },
+        "luamap.autoReconnect": {
+          "type": "boolean",
+          "default": true,
+          "description": "Reconnect automatically when the bridge connection drops."
+        },
+        "luamap.pollIntervalSeconds": {
+          "type": "number",
+          "default": 2,
+          "minimum": 1,
+          "description": "How often to poll status + refresh the NPC inspector while connected."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "test": "npm run compile && tsc -p tsconfig.test.json && node --test --test-force-exit out-test/test/*.test.js",
+    "vscode:prepublish": "npm run compile",
+    "package": "vsce package --out luamap-vscode.vsix"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^3.2.1",
+    "typescript": "~5.5.4"
+  }
+}

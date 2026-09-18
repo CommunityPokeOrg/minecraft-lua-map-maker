@@ -16,3 +16,10 @@ luamap-run/
 ide-plugin/.intellijPlatform/
 # managed IDE runtime artifacts
 .luamap/
+
+# VS Code extension
+vscode-extension/node_modules/
+vscode-extension/out/
+vscode-extension/out-test/
+vscode-extension/*.vsix
+.vscode-test/

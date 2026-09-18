@@ -94,8 +94,8 @@ java -jar luamap-launcher.jar [options]
   --xmx SIZE        game heap (default: 2G)
   --mc VERSION      override the bundled Minecraft version
   --bridgePort N    enable LuaBridge on 127.0.0.1:N for IDE live-eval/debug
-                    (see docs/luabridge.md; the LuaMap IntelliJ plugin
-                    connects here)
+                    (see docs/luabridge.md; the VS Code extension and the
+                    IntelliJ plugin connect here)
   --setup-ide       provision IntelliJ IDEA CE + LuaMap plugin under
                     .luamap/ide/, print the path, exit (no game launch)
   --ide             same, then launch the IDE
@@ -113,7 +113,7 @@ its `plugins/` directory. Start the game with `--bridgePort 25575`, open a
 `.lua` script in the IDE, and use a "LuaMap Script" run configuration to
 live-run it against the world.
 
-## IDE integration (LuaBridge + IntelliJ plugin)
+## IDE integration (LuaBridge + VS Code / IntelliJ)
 
 Two pieces make up the dev-tooling side of the repo:
 
@@ -121,12 +121,22 @@ Two pieces make up the dev-tooling side of the repo:
   newline-delimited-JSON socket server exposing `eval`/`run`/`reload`/`list`/
   `status`. Enable it with `--bridgePort 25575` (or `port=25575` in
   `<gameDir>/luamap-bridge.properties`). Protocol: [docs/luabridge.md](docs/luabridge.md).
-- **LuaMap Tools** (`ide-plugin/` — included Gradle build) — IntelliJ IDEA
-  plugin with `.luamap` file type, API-word highlighting + completion for
-  `world.*`/`player.*`/`npc.*`, a "LuaMap Script" run configuration that
-  sends scripts to LuaBridge, a gutter run marker, and a block-preview tool
-  window stub. Build: `./gradlew :ide-plugin:build` → install the zip from
-  `ide-plugin/build/distributions/` via Settings → Plugins → Install from Disk.
+- **LuaMap Tools for VS Code** (`vscode-extension/`) — **the supported IDE
+  path.** TypeScript extension with a status-bar badge, sidebar (session
+  controls, live NPC inspector, script list/runner), eval console,
+  `world.getblock` queries, and `world.*`/`npc.*`/`player.*` Lua autocomplete
+  + snippets. Commands: `LuaMap: Connect` / `Disconnect` / `Reconnect` /
+  `Run Script` / `Evaluate Lua` / `Query Block`. Build/package:
+  `cd vscode-extension && npm install && npm test && npm run package` →
+  install `luamap-vscode-*.vsix` via `code --install-extension` or
+  Extensions → Install from VSIX. See [vscode-extension/README.md](vscode-extension/README.md).
+- **LuaMap Tools for IntelliJ** (`ide-plugin/` — included Gradle build) —
+  **deprecated, retained during transition.** Same feature set for IDEA
+  (`.luamap` file type, highlighting/completion, run configuration, tool
+  window); still built and bundled into the launcher fat jar so
+  `--setup-ide`/`--ide` keep working. Build: `./gradlew :ide-plugin:build` →
+  install the zip from `ide-plugin/build/distributions/` via Settings →
+  Plugins → Install from Disk. New work should target `vscode-extension/`.
 
 The IDE plugin is a composite included build — `./gradlew build` never
 configures it, so the main build stays fast and JVM-only; build it explicitly
@@ -308,7 +318,10 @@ mods, and runs it.
 │   └── src/main/java/...   # downloader / installer / bootstrap
 ├── bridge/                 # LuaBridge protocol + localhost socket server
 │   └── src/...             # BridgeProtocol / BridgeServer / BridgeClient
-├── ide-plugin/             # IntelliJ plugin (included build; own settings)
+├── vscode-extension/       # VS Code extension (supported IDE path)
+│   ├── src/...             # bridge client, session, sidebar, completion
+│   └── test/...            # node:test suites (framing + client)
+├── ide-plugin/             # IntelliJ plugin — DEPRECATED, retained for now
 │   └── src/...             # file type, completion, run config, tool window
 ├── docs/luabridge.md       # bridge protocol spec
 └── README.md

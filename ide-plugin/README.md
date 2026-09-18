@@ -1,5 +1,11 @@
 # LuaMap Tools — IntelliJ IDEA plugin
 
+> **Deprecated.** The supported IDE path is the VS Code extension in
+> `../vscode-extension/` — same bridge protocol, same feature set, plus a
+> live tool-window-equivalent sidebar. This plugin is retained (it still
+> builds and ships inside `luamap-launcher.jar` for `--setup-ide`/`--ide`)
+> until the VS Code path has soaked; no new features land here.
+
 IDE companion for Lua Map Maker map scripts. Lives in this repo as a Gradle
 **included build** (composite) so it shares nothing with the mod build except
 the protocol documented in `../docs/luabridge.md`.
