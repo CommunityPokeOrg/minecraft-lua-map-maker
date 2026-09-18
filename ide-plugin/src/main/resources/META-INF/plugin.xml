@@ -1,0 +1,37 @@
+<idea-plugin>
+    <id>org.communitypoke.luamap.idea</id>
+    <name>LuaMap Tools</name>
+    <vendor>CommunityPokeOrg</vendor>
+
+    <description><![CDATA[
+        IDE companion for Lua Map Maker map scripts: syntax + API completion,
+        gutter run actions, a LuaBridge run configuration (live eval/run against
+        a running singleplayer world), and a block-preview tool window.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType name="LuaMap Script" fieldName="INSTANCE" language="LuaMapScript"
+                  implementationClass="org.communitypoke.luamap.idea.lang.LuaMapScriptFileType"
+                  extensions="luamap"/>
+
+        <!-- API-word highlighting for .luamap files and plain-text .lua scripts -->
+        <annotator language="LuaMapScript"
+                   implementationClass="org.communitypoke.luamap.idea.lang.LuaMapApiAnnotator"/>
+        <annotator language="TEXT"
+                   implementationClass="org.communitypoke.luamap.idea.lang.LuaMapApiAnnotator"/>
+
+        <completion.contributor language="LuaMapScript"
+                   implementationClass="org.communitypoke.luamap.idea.lang.LuaMapApiCompletionContributor"/>
+        <completion.contributor language="TEXT"
+                   implementationClass="org.communitypoke.luamap.idea.lang.LuaMapApiCompletionContributor"/>
+
+        <configurationType implementation="org.communitypoke.luamap.idea.run.LuaMapRunConfigurationType"/>
+        <runLineMarkerContributor language="LuaMapScript"
+                   implementationClass="org.communitypoke.luamap.idea.run.LuaMapRunLineMarkerContributor"/>
+
+        <toolWindow id="LuaMap" anchor="right" canCloseContents="false"
+                    factoryClass="org.communitypoke.luamap.idea.tools.LuaMapToolWindowFactory"/>
+    </extensions>
+</idea-plugin>

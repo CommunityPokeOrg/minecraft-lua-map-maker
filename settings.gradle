@@ -11,3 +11,10 @@ pluginManagement {
 
 rootProject.name = 'lua-map-maker'
 include 'launcher'
+include 'bridge'
+
+// The IntelliJ plugin lives in this repo as an included build (composite).
+// It has its own settings.gradle and only configures when its tasks run —
+// `./gradlew build` and `./gradlew test` stay fast and JVM-only. Build it
+// with `./gradlew :ide-plugin:build` or `cd ide-plugin && ./gradlew build`.
+includeBuild 'ide-plugin'

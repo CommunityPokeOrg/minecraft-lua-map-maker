@@ -93,7 +93,29 @@ java -jar luamap-launcher.jar [options]
   --username NAME   offline-mode username (default: Wolfy)
   --xmx SIZE        game heap (default: 2G)
   --mc VERSION      override the bundled Minecraft version
+  --bridgePort N    enable LuaBridge on 127.0.0.1:N for IDE live-eval/debug
+                    (see docs/luabridge.md; the LuaMap IntelliJ plugin
+                    connects here)
 ```
+
+## IDE integration (LuaBridge + IntelliJ plugin)
+
+Two pieces make up the dev-tooling side of the repo:
+
+- **LuaBridge** (`bridge/` module, embedded in the mod jar) — a localhost-only
+  newline-delimited-JSON socket server exposing `eval`/`run`/`reload`/`list`/
+  `status`. Enable it with `--bridgePort 25575` (or `port=25575` in
+  `<gameDir>/luamap-bridge.properties`). Protocol: [docs/luabridge.md](docs/luabridge.md).
+- **LuaMap Tools** (`ide-plugin/` — included Gradle build) — IntelliJ IDEA
+  plugin with `.luamap` file type, API-word highlighting + completion for
+  `world.*`/`player.*`/`npc.*`, a "LuaMap Script" run configuration that
+  sends scripts to LuaBridge, a gutter run marker, and a block-preview tool
+  window stub. Build: `./gradlew :ide-plugin:build` → install the zip from
+  `ide-plugin/build/distributions/` via Settings → Plugins → Install from Disk.
+
+The IDE plugin is a composite included build — `./gradlew build` never
+configures it, so the main build stays fast and JVM-only; build it explicitly
+when you want the IDE side.
 
 ## Lua API
 
@@ -228,6 +250,7 @@ are auto-copied into `<gameDir>/luamaps/` on first launch.
 | `lua/api/WorldApi` | `world.*` — setblock/fill/hollow/getblock/spawn/time/weather |
 | `lua/api/PlayerApi` | `player.*` — exists/name/pos/teleport/give |
 | `lua/api/NpcApi` + `npc/NpcManager` | `npc.*` — fake-player NPC registry, spawn/move/look/say |
+| `bridge/LuaBridgeService` (mod) + `bridge/` module | LuaBridge localhost socket server (IDE integration) |
 | `lua/BlockStates` | `"name[props]"` → `BlockState` parser |
 
 Commands require permission level 2 (singleplayer cheats / server op).
@@ -257,17 +280,22 @@ mods, and runs it.
 
 ```
 ├── build.gradle            # mod build (Fabric Loom)
-├── settings.gradle         # includes :launcher
+├── settings.gradle         # includes :launcher, :bridge; includeBuild ide-plugin
 ├── gradle.properties       # pinned versions (MC, loader, Fabric API, LuaJ)
 ├── gradlew / gradlew.bat   # Gradle wrapper (8.10)
-├── src/main/java/...       # mod source
+├── src/main/java/...       # mod source (+ bridge/LuaBridgeService, npc/)
 ├── src/main/resources/
 │   ├── fabric.mod.json
 │   └── luamaps/            # bundled example scripts (index.txt lists them)
-├── src/test/java/...       # JUnit tests (sandbox, script library, parser)
+├── src/test/java/...       # JUnit tests (sandbox, library, scripts, sim)
 ├── launcher/
 │   ├── build.gradle        # fatJar → luamap-launcher.jar
 │   └── src/main/java/...   # downloader / installer / bootstrap
+├── bridge/                 # LuaBridge protocol + localhost socket server
+│   └── src/...             # BridgeProtocol / BridgeServer / BridgeClient
+├── ide-plugin/             # IntelliJ plugin (included build; own settings)
+│   └── src/...             # file type, completion, run config, tool window
+├── docs/luabridge.md       # bridge protocol spec
 └── README.md
 ```
 

@@ -1,0 +1,12 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        // Maven Central mirror — kept ahead of mavenCentral for networks
+        // where repo.maven.apache.org is unreachable.
+        maven { url = 'https://maven.aliyun.com/repository/public' }
+        mavenCentral()
+        maven { url = 'https://cache-redirector.jetbrains.com/intellij-repository' }
+    }
+}
+
+rootProject.name = 'luamap-idea-plugin'

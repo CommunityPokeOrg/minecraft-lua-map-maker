@@ -27,6 +27,10 @@ dependencies {
     implementation "org.luaj:luaj-jse:${project.luaj_version}"
     include "org.luaj:luaj-jse:${project.luaj_version}"
 
+    // LuaBridge companion/debug bridge (localhost JSON-lines socket server).
+    implementation project(':bridge')
+    include project(':bridge')
+
     testImplementation "org.luaj:luaj-jse:${project.luaj_version}"
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
