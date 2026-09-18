@@ -12,6 +12,7 @@ import org.luaj.vm2.lib.VarArgFunction;
  * <pre>
  *   world   — block editing, spawn, time, weather
  *   player  — invoking player's position, teleport, inventory (nil-safe)
+ *   npc     — simulated players: spawn/remove/move/look/say, persists across runs
  *   chat(s) — send a chat message / command feedback
  *   log(s)  — same as chat (alias); print(s) also routed here
  * </pre>
@@ -24,6 +25,7 @@ public final class LuaApi {
     public static void install(Globals g, LuaContext ctx) {
         g.set("world", new WorldApi(ctx));
         g.set("player", new PlayerApi(ctx));
+        g.set("npc", new NpcApi(ctx));
 
         g.set("chat", new VarArgFunction() {
             @Override

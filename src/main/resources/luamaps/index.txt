@@ -2,3 +2,4 @@ hello.lua
 arena.lua
 tower.lua
 parkour.lua
+ai_server_sim.lua
