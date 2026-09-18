@@ -9,3 +9,5 @@ run/
 .settings/
 bin/
 launcher/run/
+javahome/
+luamap-run/

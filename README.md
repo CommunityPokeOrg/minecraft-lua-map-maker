@@ -12,14 +12,17 @@ scripts.
 
 ## Quick start (for Wolfy)
 
-You need **Java 17 or newer** on your PATH. Then:
+You need **any Java 17+** just to run the launcher itself (`java -jar …`).
+The launcher then manages its own Java 17 runtime for the game — see
+[Managed Java runtime](#managed-java-runtime) below.
 
 ```bash
 java -jar luamap-launcher.jar
 ```
 
-First run downloads ~500 MB (vanilla client, libraries, assets, Fabric
-loader) into `./luamap-run/` — subsequent runs start instantly.
+Everything lands next to the launcher jar: `javahome/` (the managed JRE) and
+`luamap-run/` (the game). First run downloads ~500 MB (JRE, vanilla client,
+libraries, assets, Fabric loader); subsequent runs start instantly.
 
 In the game:
 
@@ -45,13 +48,40 @@ java -jar luamap-launcher.jar --server
 
 Then type e.g. `luamap run arena` at the server console.
 
+### Managed Java runtime
+
+The launcher never launches Minecraft with your system Java. On every run it:
+
+1. Resolves the directory containing `luamap-launcher.jar` (not the process
+   working directory — double-clicking works the same as a terminal).
+2. Looks for a Java executable in `javahome/` under that directory,
+   accepting direct `bin/java`, nested `jdk-17.x/bin/java`, and macOS
+   `Contents/Home/bin/java` layouts.
+3. Runs `java -version` on what it finds. If it's missing or not major
+   version 17, the directory is replaced with a freshly downloaded
+   **Temurin (Adoptium) JRE 17** for the current platform.
+
+Why: Fabric/ASM only understand class files up to the Minecraft target
+version. Launching with a much newer JDK (e.g. Java 26, class version 70)
+fails the mod loader — pinning a managed Java 17 makes this a non-issue.
+
+Supported auto-download platforms (Temurin availability): **macOS aarch64
+and x64, Linux x64 and aarch64, Windows x64** (Windows ARM64 is attempted
+where Adoptium publishes a build). Downloads land in a staging dir, are
+extracted (zip or tar.gz, with exec bits applied on POSIX), validated, then
+moved into place — an interrupted run just cleans up and retries on the next
+launch.
+
+To use your own runtime instead: put any Java 17 JDK/JRE into
+`javahome/` yourself and it will be picked up as-is.
+
 ### Launcher options
 
 ```
 java -jar luamap-launcher.jar [options]
 
   --server          dedicated server instead of the client
-  --gameDir DIR     run directory (default: ./luamap-run)
+  --gameDir DIR     run directory (default: <launcher dir>/luamap-run)
   --username NAME   offline-mode username (default: Wolfy)
   --xmx SIZE        game heap (default: 2G)
   --mc VERSION      override the bundled Minecraft version
@@ -168,9 +198,11 @@ Commands require permission level 2 (singleplayer cheats / server op).
 
 ### Launcher internals (`launcher/`)
 
-A ~700-line Java program, no external framework beyond gson (merged into the
+A ~900-line Java program, no external framework beyond gson (merged into the
 jar):
 
+0. **Provisions Java 17** into `<launcher dir>/javahome` (Temurin download,
+   extraction, exec bits, version check) — the game always runs on it.
 1. Fetches the vanilla **version manifest** and version JSON from Mojang.
 2. Downloads **libraries + natives + client jar + assets** (assets in a
    parallel pool, resumable — existing files are skipped).
@@ -235,6 +267,9 @@ offline, depending on Loom config):
   (`while true do end`) will hang the game. Keep scripts finite.
 - **Absolute coordinates** — `world.*` functions use world coordinates, not
   relative `~` notation. Use `player.pos()` as an anchor.
+- **Java 17 game runtime only** — the managed `javahome/` is pinned to
+  major version 17 (matching MC 1.20.4); other versions are rejected and
+  re-provisioned.
 - **Offline mode** — the launcher never logs into a Mojang account;
   usernames are whatever `--username` says, and multiplayer skin/session
   features don't apply. No Mojang terms are bypassed — offline mode is a

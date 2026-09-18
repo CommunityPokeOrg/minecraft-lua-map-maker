@@ -14,7 +14,7 @@ final class ServerFlow {
     private ServerFlow() {
     }
 
-    static int run(Main.Versions v, Path gameDir, String xmx) throws Exception {
+    static int run(Main.Versions v, Path gameDir, Path java, String xmx) throws Exception {
         Path abs = gameDir.toAbsolutePath();
         Files.createDirectories(abs);
 
@@ -42,11 +42,9 @@ final class ServerFlow {
 
         Mods.install(abs, v);
 
-        String exe = "windows".equals(Os.name()) ? "java.exe" : "java";
-        String java = Path.of(System.getProperty("java.home"), "bin", exe).toString();
         System.out.println("Starting server (flat creative world). Try: luamap run arena");
-        ProcessBuilder pb = new ProcessBuilder(java, "-Xmx" + xmx, "-jar",
-                launcherJar.getFileName().toString(), "nogui");
+        ProcessBuilder pb = new ProcessBuilder(java.toAbsolutePath().toString(), "-Xmx" + xmx,
+                "-jar", launcherJar.getFileName().toString(), "nogui");
         pb.directory(abs.toFile());
         pb.inheritIO();
         return pb.start().waitFor();

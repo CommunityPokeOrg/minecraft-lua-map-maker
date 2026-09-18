@@ -38,7 +38,7 @@ final class ClientFlow {
     private ClientFlow() {
     }
 
-    static int run(Main.Versions v, Path gameDir, String username, String xmx) throws Exception {
+    static int run(Main.Versions v, Path gameDir, Path java, String username, String xmx) throws Exception {
         Path abs = gameDir.toAbsolutePath();
         Path versionsDir = Files.createDirectories(abs.resolve("versions"));
         Path libDir = Files.createDirectories(abs.resolve("libraries"));
@@ -150,7 +150,7 @@ final class ClientFlow {
         ph.put("classpath_separator", File.pathSeparator);
 
         List<String> cmd = new ArrayList<>();
-        cmd.add(javaBin());
+        cmd.add(java.toAbsolutePath().toString());
         cmd.add("-Xmx" + xmx);
         addArgs(profile.getAsJsonObject("arguments"), "jvm", cmd, ph);
         addArgs(version.getAsJsonObject("arguments"), "jvm", cmd, ph);
@@ -158,7 +158,8 @@ final class ClientFlow {
         addArgs(version.getAsJsonObject("arguments"), "game", cmd, ph);
         addArgs(profile.getAsJsonObject("arguments"), "game", cmd, ph);
 
-        System.out.println("Launching Minecraft " + v.mc() + " (Fabric " + v.loader() + ") as " + username);
+        System.out.println("Launching Minecraft " + v.mc() + " (Fabric " + v.loader()
+                + ") as " + username + " with " + java);
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.directory(abs.toFile());
         pb.inheritIO();
@@ -195,11 +196,6 @@ final class ClientFlow {
     private static String offlineUuid(String username) {
         return UUID.nameUUIDFromBytes(
                 ("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8)).toString();
-    }
-
-    private static String javaBin() {
-        String exe = "windows".equals(Os.name()) ? "java.exe" : "java";
-        return Path.of(System.getProperty("java.home"), "bin", exe).toString();
     }
 
     /**
