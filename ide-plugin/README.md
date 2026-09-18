@@ -28,8 +28,16 @@ cd ide-plugin && ../gradlew build       # or gradle wrapper of your choice
 
 Produces `build/distributions/luamap-idea-plugin-<version>.zip` — install via
 IDEA → Settings → Plugins → ⚙ → Install Plugin from Disk. The IDE dependency
-(IC, ~1.5 GB) downloads on first build; platform version pins live in
-`gradle.properties`.
+(~1.5 GB) downloads on first build; platform pins live in `gradle.properties`.
+
+Compatibility: `since-build="241"` (IDEA 2024.1+) with **no `until-build`** —
+the plugin loads on every newer IDE, including 2025.3 (build 253.*) as
+provisioned by `--setup-ide`. The build compiles against the unified IDEA
+distribution (`ideaIU`; JetBrains stopped publishing a separate IC archive
+starting with 2025.3) using a JDK 21 toolchain auto-provisioned by
+foojay-resolver, while emitting Java 17 bytecode that also runs on JBR 17
+IDEs. `verifyPluginXml` (wired into `check`) fails the build if the packaged
+plugin.xml ever loses that range.
 
 ## Try it
 
