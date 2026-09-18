@@ -30,7 +30,12 @@ In the game:
 2. `/luamap list` — shows the bundled example scripts
 3. `/luamap run arena` — builds a walled arena around you
 4. `/luamap run tower` — builds a lookout tower
-5. `/luamap eval chat('hi from lua')` — evaluate a one-liner
+5. `/luamap run parkour` — generates 30 segments of an infinite procedural
+   parkour course ahead of you; re-run it as you progress to extend the
+   course (jump chains, stairs, beams, slime/ice pads, checkpoints, lava
+   hazard). Progress is tracked via an in-world marker so generation resumes
+   where it left off.
+6. `/luamap eval chat('hi from lua')` — evaluate a one-liner
 
 Your own scripts go in `luamap-run/luamaps/`. The file name (minus `.lua`) is
 the command name. Scripts that build "around you" should use
@@ -276,6 +281,11 @@ offline, depending on Loom config):
   vanilla feature; assets and game files are downloaded from Mojang's
   official servers.
 - **1M block cap** per `fill`/`hollow` call.
+- **No tick/event callbacks** — scripts run once and exit, so "generate
+  ahead while playing" is emulated by re-running the script (`parkour.lua`
+  resumes from a world marker). There is no per-player respawn or
+  fall-detection hook, so parkour checkpoints are visual; `world.spawn`
+  is the only respawn lever a script has.
 - No undo/redo, no schematic import/export, no per-map packaging — yet.
 - Lua is 5.2 semantics (LuaJ), not 5.3+/LuaJIT.
 
