@@ -115,8 +115,10 @@ tasks.register('verifyLauncherJar') {
 
 check {
     dependsOn tasks.named('verifyLauncherJar')
-    // Also verify the plugin zip's packaged compatibility range.
+    // Also verify the plugin zip's packaged compatibility range, and run the
+    // plugin's plain-JVM unit tests (its IDE-harness `test` task is disabled).
     dependsOn gradle.includedBuild('ide-plugin').task(':verifyPluginXml')
+    dependsOn gradle.includedBuild('ide-plugin').task(':unitTest')
 }
 
 build {

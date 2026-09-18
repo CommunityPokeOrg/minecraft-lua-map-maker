@@ -33,6 +33,33 @@ dependencies {
         instrumentationTools()
         pluginVerifier()
     }
+
+    // Gson ships on the IDE classpath at runtime; declare it for tests.
+    testImplementation 'com.google.code.gson:gson:2.11.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// The platform's `test` task runs inside the IDE runtime (PathClassLoader,
+// coroutines javaagent) — broken on the unified 2025.3 distro and unneeded
+// for our pure-JVM bridge/session unit tests. Disable it and run them on a
+// plain JVM via `unitTest` instead (wired into `check`).
+test {
+    enabled = false
+}
+
+tasks.register('unitTest', Test) {
+    useJUnitPlatform()
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    javaLauncher = javaToolchains.launcherFor(java.toolchain)
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+    }
+}
+
+check {
+    dependsOn tasks.named('unitTest')
 }
 
 // Boots the IDE headless to index settings UI — the plugin has no settings

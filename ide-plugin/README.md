@@ -12,10 +12,13 @@ the protocol documented in `../docs/luabridge.md`.
 - "LuaMap Script" run configuration (host/port/script) that sends the script
   to LuaBridge (`run` op) and prints script output in the Run console.
 - Gutter run marker on `.luamap` files (wires into the run configuration).
-- "LuaMap" tool window stub for the block-preview panel (to be driven by
-  `world.getblock`/`world.fill` queries over LuaBridge).
-- `LuaBridgeClient` — synchronous newline-delimited-JSON socket client for the
-  bridge protocol.
+- Live "LuaMap" tool window: host/port connect controls, connection badge
+  (Connected/Connecting/Error/Disconnected), auto-reconnect, periodic
+  status polling and NPC inspector (`npc.list()` via `eval`), block query
+  (`world.getblock`), script list + run/reload, and an eval console — all
+  socket I/O off the EDT via `LuaBridgeSession`'s background executor.
+- `LuaBridgeClient`/`LuaBridgeSession` — synchronous NDJSON socket client
+  plus a lifecycle/polling controller for the bridge protocol.
 
 ## Build
 
@@ -56,5 +59,15 @@ use the gutter/run button or a "LuaMap Script" run config pointed at
 
 - True debugger UI (breakpoints/step-through) — protocol has the `eval`/`run`
   shape to hang a debug session on, but no frame model exists in the mod.
-- Block preview rendering (tool window is a placeholder panel).
+- Block preview *rendering* (the tool window queries blocks via
+  `world.getblock` but doesn't draw a region map).
 - Error squiggles mapping LuaError line numbers back into the editor.
+
+## Tests
+
+`./gradlew :ide-plugin:unitTest` — loopback integration tests: a mock NDJSON
+bridge server exercises connect/disconnect/reconnect, status transitions,
+auto-reconnect, NPC + block responses, and protocol framing. The platform
+`test` task is disabled (its IDE runtime harness doesn't work on the unified
+2025.3 distribution); `unitTest` runs on a plain JVM and is wired into
+`check`.
