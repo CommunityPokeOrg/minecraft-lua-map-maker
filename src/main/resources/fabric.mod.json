@@ -1,0 +1,23 @@
+{
+    "schemaVersion": 1,
+    "id": "luamap",
+    "version": "${version}",
+    "name": "Lua Map Maker",
+    "description": "Build Minecraft maps from Lua scripts. Drop .lua files into the luamaps/ folder and run /luamap run <name>.",
+    "authors": ["CommunityPoke"],
+    "contact": {},
+    "license": "MIT",
+    "environment": "*",
+    "entrypoints": {
+        "main": [
+            "org.communitypoke.luamap.LuaMapMakerMod"
+        ]
+    },
+    "depends": {
+        "fabricloader": ">=0.15.0",
+        "fabric-api": "*",
+        "minecraft": "~${minecraft_version}",
+        "java": ">=17"
+    },
+    "suggests": {}
+}
