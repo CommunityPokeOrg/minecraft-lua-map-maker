@@ -35,7 +35,10 @@ In the game:
    course (jump chains, stairs, beams, slime/ice pads, checkpoints, lava
    hazard). Progress is tracked via an in-world marker so generation resumes
    where it left off.
-6. `/luamap eval chat('hi from lua')` — evaluate a one-liner
+6. `/luamap run ai_server_sim` — spawns 8 simulated players (visible in the
+   tab list) that wander, run role tasks, chat, converse, and greet you; each
+   run advances the simulation 40 deterministic steps.
+7. `/luamap eval chat('hi from lua')` — evaluate a one-liner
 
 Your own scripts go in `luamap-run/luamaps/`. The file name (minus `.lua`) is
 the command name. Scripts that build "around you" should use
@@ -127,6 +130,33 @@ if player.exists() then           -- false when run from server console
 end
 ```
 
+### `npc` — simulated players (AI server simulator)
+
+NPCs are real fake-player entities (Fabric `FakePlayer`): they appear in the
+tab list, occupy the world, and **persist across script runs** — use
+`npc.list()` on re-entry to resume control of an existing population.
+
+```lua
+npc.spawn("Sim_Aria", x, y, z)       -- name: 3-16 chars [A-Za-z0-9_], unique
+npc.exists("Sim_Aria")               -- -> boolean
+npc.remove("Sim_Aria")               -- -> boolean
+npc.removeAll()                      -- -> count removed
+npc.list()                           -- -> {name={x=..,y=..,z=..}, ...}
+npc.count()                          -- -> n
+npc.pos("Sim_Aria")                  -- -> x, y, z
+npc.moveto("Sim_Aria", x, y, z)      -- teleport-step move (1 block/step is the
+                                    --   convention for "walking")
+npc.look("Sim_Aria", yaw, pitch)     -- set facing
+npc.say("Sim_Aria", "hello")         -- broadcasts "<Sim_Aria> hello"
+```
+
+Because scripts are synchronous, "living" NPCs are driven in steps — see
+`luamaps/ai_server_sim.lua` for a full step-based simulator (roles, tasks,
+wandering, chatter, NPC↔NPC and NPC↔player interactions). Movement is
+teleport-step walking — no continuous physics or built-in pathfinding; scripts
+implement walkability checks via `world.getblock`. `npc.say` is a server
+broadcast, not signed player chat.
+
 ### Output
 
 ```lua
@@ -197,6 +227,7 @@ are auto-copied into `<gameDir>/luamaps/` on first launch.
 | `lua/LuaContext` | world + invoking player + output sink |
 | `lua/api/WorldApi` | `world.*` — setblock/fill/hollow/getblock/spawn/time/weather |
 | `lua/api/PlayerApi` | `player.*` — exists/name/pos/teleport/give |
+| `lua/api/NpcApi` + `npc/NpcManager` | `npc.*` — fake-player NPC registry, spawn/move/look/say |
 | `lua/BlockStates` | `"name[props]"` → `BlockState` parser |
 
 Commands require permission level 2 (singleplayer cheats / server op).
