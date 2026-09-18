@@ -62,14 +62,17 @@ tasks.register('fatJar', Jar) {
     }
     // Bundle the IDE plugin zip produced by the ide-plugin composite build so
     // '--setup-ide/--ide' work offline (see IdeProvisioner.BUNDLED_PLUGIN).
+    // Pin the exact plugin version — stale dists can coexist in the dir.
+    def ideProps = new Properties()
+    file("${rootDir}/ide-plugin/gradle.properties").withInputStream { ideProps.load(it) }
     dependsOn gradle.includedBuild('ide-plugin').task(':buildPlugin')
     from sourceSets.main.output
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
     from("${rootDir}/ide-plugin/build/distributions") {
-        include 'luamap-idea-plugin-*.zip'
-        rename 'luamap-idea-plugin-.*\\.zip', 'luamap-idea-plugin.zip'
+        include "luamap-idea-plugin-${ideProps.pluginVersion}.zip"
+        rename '.*', 'luamap-idea-plugin.zip'
         into 'bundled-plugins'
     }
 }
