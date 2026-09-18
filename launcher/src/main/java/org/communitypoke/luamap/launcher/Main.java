@@ -15,6 +15,8 @@ import java.util.Properties;
  *   --username NAME   offline-mode username (default: Wolfy)
  *   --xmx SIZE        heap for the game process (default: 2G)
  *   --mc VERSION      override Minecraft version
+ *   --bridgePort N    enable LuaBridge on 127.0.0.1:N (IDE live-eval/debug;
+ *                     the LuaMap IntelliJ plugin connects here)
  * </pre>
  *
  * The launcher is anchored to the directory containing its own jar — the
@@ -35,6 +37,7 @@ public final class Main {
         String username = "Wolfy";
         String xmx = "2G";
         String mcOverride = null;
+        int bridgePort = 0;
 
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
@@ -43,6 +46,7 @@ public final class Main {
                 case "--username" -> username = args[++i];
                 case "--xmx" -> xmx = args[++i];
                 case "--mc" -> mcOverride = args[++i];
+                case "--bridgePort" -> bridgePort = Integer.parseInt(args[++i]);
                 case "--help", "-h" -> {
                     System.out.println(usage());
                     return;
@@ -84,14 +88,19 @@ public final class Main {
         // Managed Java 17 — downloaded into javahome/ on first run.
         Path java = JavaProvisioner.ensureJava17(launcherDir);
 
+        if (bridgePort > 0) {
+            System.out.println("LuaBridge enabled on 127.0.0.1:" + bridgePort
+                    + " (IDE plugin endpoint; -Dluamap.bridge.port passed to the game)");
+        }
+
         int code = server
-                ? ServerFlow.run(v, gameDir, java, xmx)
-                : ClientFlow.run(v, gameDir, java, username, xmx);
+                ? ServerFlow.run(v, gameDir, java, xmx, bridgePort)
+                : ClientFlow.run(v, gameDir, java, username, xmx, bridgePort);
         System.exit(code);
     }
 
     private static String usage() {
-        return "java -jar luamap-launcher.jar [--server] [--gameDir DIR] [--username NAME] [--xmx SIZE] [--mc VERSION]";
+        return "java -jar luamap-launcher.jar [--server] [--gameDir DIR] [--username NAME] [--xmx SIZE] [--mc VERSION] [--bridgePort N]";
     }
 
     record Versions(String mc, String loader, String fabricApi, String installer, String mod) {

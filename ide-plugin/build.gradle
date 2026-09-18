@@ -1,0 +1,41 @@
+plugins {
+    id 'java'
+    id 'org.jetbrains.intellij.platform' version '2.2.1'
+}
+
+version = pluginVersion
+group = 'org.communitypoke'
+
+// Compiles fine on JDK 17 (class file v61 runs on JBR 21); bump to VERSION_21
+// when building on a JDK 21+ host to silence the platform warning.
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    maven { url = 'https://maven.aliyun.com/repository/public' }
+    mavenCentral()
+    intellijPlatform {
+        defaultRepositories()
+    }
+}
+
+dependencies {
+    intellijPlatform {
+        intellijIdeaCommunity(platformVersion.toString())
+        instrumentationTools()
+        pluginVerifier()
+    }
+}
+
+intellijPlatform {
+    pluginConfiguration {
+        id = 'org.communitypoke.luamap.idea'
+        name = 'LuaMap Tools'
+        version = pluginVersion.toString()
+        ideaVersion {
+            sinceBuild = pluginSinceBuild.toString()
+        }
+    }
+}

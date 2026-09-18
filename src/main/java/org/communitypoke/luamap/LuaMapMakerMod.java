@@ -34,6 +34,7 @@ public class LuaMapMakerMod implements ModInitializer {
         }
 
         LuaMapCommand.register(scripts);
+        org.communitypoke.luamap.bridge.LuaBridgeService.register(scripts);
         LOGGER.info("Lua Map Maker loaded — {} script(s) in {}", scripts.list().size(), scripts.directory());
     }
 }

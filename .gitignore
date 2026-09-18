@@ -1,13 +1,16 @@
 .gradle/
 build/
 out/
-run/
+/run/
 *.iml
 .idea/
 .classpath
 .project
 .settings/
 bin/
-launcher/run/
+/launcher/run/
 javahome/
 luamap-run/
+
+# IntelliJ platform local state
+ide-plugin/.intellijPlatform/

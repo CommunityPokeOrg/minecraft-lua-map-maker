@@ -38,7 +38,7 @@ final class ClientFlow {
     private ClientFlow() {
     }
 
-    static int run(Main.Versions v, Path gameDir, Path java, String username, String xmx) throws Exception {
+    static int run(Main.Versions v, Path gameDir, Path java, String username, String xmx, int bridgePort) throws Exception {
         Path abs = gameDir.toAbsolutePath();
         Path versionsDir = Files.createDirectories(abs.resolve("versions"));
         Path libDir = Files.createDirectories(abs.resolve("libraries"));
@@ -152,6 +152,9 @@ final class ClientFlow {
         List<String> cmd = new ArrayList<>();
         cmd.add(java.toAbsolutePath().toString());
         cmd.add("-Xmx" + xmx);
+        if (bridgePort > 0) {
+            cmd.add("-Dluamap.bridge.port=" + bridgePort);
+        }
         addArgs(profile.getAsJsonObject("arguments"), "jvm", cmd, ph);
         addArgs(version.getAsJsonObject("arguments"), "jvm", cmd, ph);
         cmd.add(mainClass);
