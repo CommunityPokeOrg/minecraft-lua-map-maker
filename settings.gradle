@@ -1,0 +1,13 @@
+pluginManagement {
+    repositories {
+        maven { url = 'https://maven.fabricmc.net/' }
+        gradlePluginPortal()
+        // Maven Central mirror — kept ahead of mavenCentral for networks where
+        // repo.maven.apache.org is unreachable.
+        maven { url = 'https://maven.aliyun.com/repository/public' }
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'lua-map-maker'
+include 'launcher'

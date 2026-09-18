@@ -1,0 +1,61 @@
+plugins {
+    id 'java'
+}
+
+version = rootProject.version
+group = rootProject.group
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    // Maven Central mirror first — kept ahead of mavenCentral for networks
+    // where repo.maven.apache.org is unreachable.
+    maven { url = 'https://maven.aliyun.com/repository/public' }
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.google.code.gson:gson:2.11.0'
+}
+
+def modJarProvider = rootProject.layout.buildDirectory.dir('libs')
+
+// Embed the built mod jar inside the launcher jar so Wolfy only ever needs
+// one file: luamap-launcher.jar. It is extracted into <gameDir>/mods at run time.
+processResources {
+    dependsOn rootProject.tasks.named('remapJar')
+    from(modJarProvider) {
+        include '*.jar'
+        exclude '*sources*', '*dev*'
+        into 'bundled-mods'
+    }
+    filesMatching('launcher.properties') {
+        expand 'mc_version': rootProject.property('minecraft_version'),
+               'loader_version': rootProject.property('loader_version'),
+               'fabric_api_version': rootProject.property('fabric_version'),
+               'installer_version': rootProject.property('fabric_installer_version'),
+               'mod_version': rootProject.property('mod_version')
+    }
+}
+
+// Self-contained executable jar: own classes + merged dependency jars + resources.
+tasks.register('fatJar', Jar) {
+    description = 'Builds the runnable single-file luamap-launcher.jar'
+    archiveFileName = 'luamap-launcher.jar'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes 'Main-Class': 'org.communitypoke.luamap.launcher.Main',
+                   'Implementation-Version': project.version
+    }
+    from sourceSets.main.output
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+build {
+    dependsOn tasks.named('fatJar')
+}
