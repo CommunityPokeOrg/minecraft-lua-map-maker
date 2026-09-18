@@ -16,3 +16,6 @@ luamap-run/
 ide-plugin/.intellijPlatform/
 # managed IDE runtime artifacts
 .luamap/
+
+# JVM crash logs
+hs_err_pid*.log
