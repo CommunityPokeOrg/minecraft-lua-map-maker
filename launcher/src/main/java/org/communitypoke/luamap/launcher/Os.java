@@ -9,6 +9,10 @@ final class Os {
     private Os() {
     }
 
+    static boolean isWindows() {
+        return "windows".equals(name());
+    }
+
     static String name() {
         String n = System.getProperty("os.name", "").toLowerCase();
         if (n.contains("win")) {

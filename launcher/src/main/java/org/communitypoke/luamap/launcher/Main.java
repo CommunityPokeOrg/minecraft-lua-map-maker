@@ -11,22 +11,27 @@ import java.util.Properties;
  *
  *   --server          launch a dedicated server instead of the client
  *                     (handy on headless machines; /luamap works from the console)
- *   --gameDir DIR     run directory (default: ./luamap-run)
+ *   --gameDir DIR     run directory (default: &lt;launcher dir&gt;/luamap-run)
  *   --username NAME   offline-mode username (default: Wolfy)
  *   --xmx SIZE        heap for the game process (default: 2G)
  *   --mc VERSION      override Minecraft version
  * </pre>
  *
- * The launcher downloads the vanilla game, libraries, assets, and the Fabric
- * loader profile on first run, extracts the bundled mod jar into
- * {@code <gameDir>/mods}, then starts the game. Everything lands under the
- * game directory — no Minecraft installation required.
+ * The launcher is anchored to the directory containing its own jar — the
+ * managed {@code javahome/} Java 17 runtime and the default {@code
+ * luamap-run/} game dir live there, so behavior doesn't depend on where the
+ * process was started from.
+ *
+ * <p>On start it ensures {@code <launcher dir>/javahome} holds a Java 17
+ * runtime — auto-downloading a Temurin JRE 17 for the current OS/arch if not —
+ * and always launches Minecraft with that Java, never a newer system JDK
+ * (which Fabric/ASM reject, e.g. Java 26 / class version 70).
  */
 public final class Main {
 
     public static void main(String[] args) throws Exception {
         boolean server = false;
-        Path gameDir = Path.of("luamap-run");
+        Path gameDir = null;
         String username = "Wolfy";
         String xmx = "2G";
         String mcOverride = null;
@@ -49,6 +54,13 @@ public final class Main {
             }
         }
 
+        Path launcherDir = LauncherDirs.launcherDir();
+        if (gameDir == null) {
+            gameDir = launcherDir.resolve("luamap-run");
+        } else if (!gameDir.isAbsolute()) {
+            gameDir = launcherDir.resolve(gameDir);
+        }
+
         Properties p = new Properties();
         try (var in = Main.class.getResourceAsStream("/launcher.properties")) {
             if (in == null) {
@@ -66,11 +78,15 @@ public final class Main {
 
         System.out.println("Lua Map Maker launcher — Minecraft " + v.mc()
                 + " / Fabric Loader " + v.loader() + " / mod " + v.mod());
+        System.out.println("Launcher dir: " + launcherDir);
         System.out.println("Game dir: " + gameDir.toAbsolutePath());
 
+        // Managed Java 17 — downloaded into javahome/ on first run.
+        Path java = JavaProvisioner.ensureJava17(launcherDir);
+
         int code = server
-                ? ServerFlow.run(v, gameDir, xmx)
-                : ClientFlow.run(v, gameDir, username, xmx);
+                ? ServerFlow.run(v, gameDir, java, xmx)
+                : ClientFlow.run(v, gameDir, java, username, xmx);
         System.exit(code);
     }
 
